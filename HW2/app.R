@@ -24,7 +24,15 @@ ui <- dashboardPage(
                                 titleWidth = 400),
                 dashboardSidebar(
                   sidebarMenu(width = 2,
-                               selectInput("y", "Select a variable for the y-axis of the histogram,
+                              id = "tabs",
+                              
+                              #Page tabs
+                              menuItem("Home", icon = icon("home"), tabName = "home"),
+                              menuItem("Bar chart", icon = icon("bar-chart"), tabName = "bar"),
+                              menuItem("Pie chart", icon = icon("chart-pie"), tabName = "pie"),
+                              
+                              #Inputs and filters
+                              selectInput("y", "Select a variable for the y-axis of the histogram,
                                            bar chart, and pie chart breakdown:", 
                                            c("Land Use (Kg CO2)" = "Land_use",
                                              "Animal Feed (Kg CO2)" = "Animal_feed",
@@ -81,24 +89,26 @@ ui <- dashboardPage(
                                              label = "Show data table",
                                              value = TRUE))),
                   
-                  #Output - creating two tabs
+                  #Output - tabs
                   dashboardBody(
-                    fluidRow(
-                      valueBoxOutput("total_emissions"),
-                      valueBoxOutput("x_total"),
-                      valueBoxOutput("y_total"),
                     tabItems(
-                      tabItem("Scatterplot", 
-                               fluidRow(plotOutput(outputId = "scatterplot")),
-                               fluidRow(
-                                 DT::dataTableOutput(outputId = "datatable"))),
-                      tabItem("Bar chart",
-                              fluidRow(plotOutput(outputId = "barchart"))),
-                      tabItem("Pie Chart of Total Emissions", 
+                      tabItem("home",
+                        fluidRow(
+                          valueBoxOutput("total_emissions"),
+                          valueBoxOutput("x_total"),
+                          valueBoxOutput("y_total")),
+                        fluidRow(
+                          plotOutput(outputId = "scatterplot")),
+                        fluidRow(
+                          DT::dataTableOutput(outputId = "datatable"))),
+                      tabItem("bar",
+                              fluidRow(plotOutput(outputId = "barchart")),
+                              fluidRow(
+                                DT::dataTableOutput(outputId = "datatable"))),
+                      tabItem("pie", 
                                fluidRow(plotOutput(outputId = "piechart")),
                                fluidRow(
-                                 DT::dataTableOutput(outputId = "piedata")))))
-                )
+                                 DT::dataTableOutput(outputId = "datatable")))))
 )
 
 #SERVER SIDE
