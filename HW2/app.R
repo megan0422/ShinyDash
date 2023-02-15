@@ -8,7 +8,7 @@ library(shinythemes)
 #DATA MANIPULATION AND CLEANING 
 food <- read_csv("food.csv", show_col_types = FALSE)
 colnames(food)[colnames(food) == "Packging"] <- "Packaging" #Changing a misspelling
-#Make a  new categorical vvariable for food product categories
+#Make a  new categorical variable for food product categories
 food <- food %>%
   mutate(category = case_when(
     grepl("Beef|Lamb|Pig|Poultry|Fish", product, ignore.case = TRUE) ~ "Meat/Seafood",
@@ -20,10 +20,12 @@ food <- food %>%
 
 #USER INTERFACE SIDE
 ui <- dashboardPage(
-                dashboardHeader(title = "Environmental Impact of Food Production"),
+                dashboardHeader(title = "Environmental Impact of Food Production",
+                                titleWidth = 400),
                 dashboardSidebar(
-                  sidebarPanel(width = 2,
-                               selectInput("y", "Select a variable for the y-axis:", 
+                  sidebarMenu(width = 2,
+                               selectInput("y", "Select a variable for the y-axis of the histogram,
+                                           bar chart, and pie chart breakdown:", 
                                            c("Land Use (Kg CO2)" = "Land_use",
                                              "Animal Feed (Kg CO2)" = "Animal_feed",
                                              "Farm (Kg CO2)" = "Farm",
@@ -47,7 +49,7 @@ ui <- dashboardPage(
                                              "Scarcity Weighted Water Use (per 100g protein)" = "Scarcity_water_protein",
                                              "Scarcity Weighted Water Use (per 100 kcal)" = "Scarcity_water_kcal"),
                                            selected = "Land Use (Kg CO2)"),
-                               selectInput("x", "Select a variable for the x-axis:", 
+                               selectInput("x", "Select a variable for the x-axis of the histogram:", 
                                            c("Land Use (Kg CO2)" = "Land_use",
                                              "Animal Feed (Kg CO2)" = "Animal_feed",
                                              "Farm (Kg CO2)" = "Farm",
@@ -71,33 +73,35 @@ ui <- dashboardPage(
                                              "Scarcity Weighted Water Use (per 100g protein)" = "Scarcity_water_protein",
                                              "Scarcity Weighted Water Use (per 100 kcal)" = "Scarcity_water_kcal"),
                                            selected = "Greenhouse Gas Emissions per 100 kcal"),
-                               sliderInput("emissions", "Pick a range of total emissions to filter food products for the dot plot:",
+                               sliderInput("emissions", "Pick a range of total emissions to filter food products in the dataset
+                                           (this will also change the histogram):",
                                            min = 0, max = 60, value = c(0,10)),
                                #show data table
                                checkboxInput(inputId = "show_data",
                                              label = "Show data table",
-                                             value = TRUE),
+                                             value = TRUE))),
                   
                   #Output - creating two tabs
                   dashboardBody(
+                    fluidRow(
+                      valueBoxOutput("total_emissions"),
+                      valueBoxOutput("x_total"),
+                      valueBoxOutput("y_total"),
                     tabItems(
-                      tabItem("Interactive Charts", 
+                      tabItem("Scatterplot", 
+                               fluidRow(plotOutput(outputId = "scatterplot")),
                                fluidRow(
-                                 column(6, plotOutput(outputId = "scatterplot")),
-                                 column(6, plotOutput(outputId = "barchart"))),
-                               fluidRow(
-                                 DT::dataTableOutput(outputId = "datatable")
-                               )),
+                                 DT::dataTableOutput(outputId = "datatable"))),
+                      tabItem("Bar chart",
+                              fluidRow(plotOutput(outputId = "barchart"))),
                       tabItem("Pie Chart of Total Emissions", 
                                fluidRow(plotOutput(outputId = "piechart")),
                                fluidRow(
-                                 DT::dataTableOutput(outputId = "piedata"))))
+                                 DT::dataTableOutput(outputId = "piedata")))))
                 )
 )
-)
-)
 
-#SERVER side
+#SERVER SIDE
 server <- function(input, output) {
   food_filtered <- reactive({
     req(input$y, input$x, input$emissions)
@@ -130,9 +134,10 @@ server <- function(input, output) {
   })
   # Render the pie chart
   output$piechart <- renderPlot({
-    foodprod_sum <- aggregate(food$input$y, by = list(foodtop10$category), sum) #for pie chart
-    names(foodprod_sum) <- c("Category", "Total_emissions")
-    ggplot(data = foodprod_sum, aes(x = "", y = input$y, fill = category)) +
+    foodprod_sum <- aggregate(input$y ~ category, data = food, FUN = sum)
+    names(foodprod_sum) <- c("Category", "Selected_emission")
+    
+    ggplot(data = foodprod_sum, aes(x = "", y = Selected_emission, fill = category)) +
       geom_bar(width = 1, stat = "identity") +
       coord_polar("y", start = 0) +
       scale_fill_brewer(palette = "Paired") +
@@ -156,15 +161,35 @@ server <- function(input, output) {
     }
   )
   
-  #Render a second data table for the pie chart tab
-  output$piedata <- DT::renderDataTable({
-    DT::datatable(data = foodprod_sum,
-                  options = list(pageLength = 10), 
-                  rownames = FALSE)
+  #Render the value boxes 
+  output$total_emissions <- renderValueBox({
+    valueBox(
+      value = format(round(aggregate(Total_emissions ~ category,
+                                     data = food, sum)$Total_emissions), nsmall = 2),
+      subtitle = "Total Emissions",
+      icon = icon("earth-americas"),
+      color = "blue"
+    )
+  })
+  
+  output$y_total <- renderValueBox({
+    valueBox(
+      value = format(round(sum(food$input[food$product == input$y]), nsmall = 2)),
+      subtitle = tools::toTitleCase(gsub("_", " ", input$y)),
+      icon = icon("fire"),
+      color = "red"
+    )
+  })
+  output$x_total <- renderValueBox({
+    valueBox(
+      vvalue = format(round(sum(food$input[food$product == input$x]), nsmall = 2)),
+      subtitle = tools::toTitleCase(gsub("_", " ", input$x)),
+      icon = icon("tree"),
+      color = "green"
+    )
   })
   
 }
-
 
 #run the dashboard
 shinyApp(ui = ui, server = server)
