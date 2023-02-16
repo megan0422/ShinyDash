@@ -111,7 +111,7 @@ ui <- dashboardPage(
                               ),
                       tabItem("pie", 
                                fluidRow(
-                                 plotOutput(outputId = "piechart")
+                                 plotlyOutput(outputId = "piechart")
                                  )
                               )
                       )
@@ -159,22 +159,17 @@ server <- function(input, output) {
   })
   
   # Render the pie chart
-  output$piechart <- renderPlot({
-    foodprod_sum <- aggregate(input$y ~ category, data = food_filtered(), FUN = sum)
-    names(foodprod_sum) <- c("Category", "Selected_emission")
-    ggplot(data = foodprod_sum, aes(y = Selected_emission, fill = category)) +
-      geom_bar(width = 1, stat = "identity") +
-      coord_polar("y", start = 0) +
-      scale_fill_brewer(palette = "Paired") +
-      ggtitle("Selected Emission by Food Type") +
-      xlab("") +
-      ylab(tools::toTitleCase(gsub("_", " ", input$y))) +
-      theme(legend.position = "right",
-            plot.title = element_text(hjust = 0.5)) +
-      guides(fill = guide_legend(title = "Food Category")) +
-      theme_classic() +
-      theme(axis.ticks = element_blank()) +
-      theme(axis.text = element_blank())
+  output$piechart <- renderPlotly({
+    fig <- plot_ly(food_filtered(), labels = ~category, values = ~Total_emissions, type = 'pie',
+                   textposition = 'inside',
+                   textinfo = 'percent',
+                   marker = list(colors = c('#c584e4', '#82ac64', '#00bbd4', '#fef769'),
+                                 line = list(color = '#FFFFFF', width = 1)))
+    fig <- fig %>% layout(title = 'Total Emissions by Food Category',
+                          xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                          yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+    
+    return(fig)
   })
   
   #Render data table on all tabs (if checked)
