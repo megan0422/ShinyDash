@@ -27,13 +27,13 @@ ui <- dashboardPage(
                               id = "tabs",
                               
                               #Page tabs
-                              menuItem("Home", icon = icon("home"), tabName = "home"),
+                              menuItem("Home", icon = icon("poo"), tabName = "home"),
                               menuItem("Bar chart", icon = icon("bar-chart"), tabName = "bar"),
                               menuItem("Pie chart", icon = icon("chart-pie"), tabName = "pie"),
                               
                               #Inputs and filters
-                              selectInput("y", "Select an emissions variable for the y-axis of the histogram,
-                                           bar chart, and pie chart breakdown:", 
+                              selectInput("y", "Select an emissions variable for the y-axis of the histogram and
+                                           bar chart:", 
                                            c("Land Use (Kg CO2)" = "Land_use",
                                              "Animal Feed (Kg CO2)" = "Animal_feed",
                                              "Farm (Kg CO2)" = "Farm",
@@ -82,8 +82,8 @@ ui <- dashboardPage(
                                              "Scarcity Weighted Water Use (per 100 kcal)" = "Scarcity_water_kcal"),
                                            selected = "Animal_feed"),
                                sliderInput("emissions", "Pick a range of total emissions to filter food products in the dataset
-                                           (this will also change the histogram):",
-                                           min = 0, max = 60, value = c(0,10)),
+                                           and plots:",
+                                           min = 0, max = 60, value = c(0,30)),
                                #show data table
                                checkboxInput(inputId = "show_data",
                                              label = "Show data table",
@@ -134,7 +134,8 @@ server <- function(input, output) {
     ggplotly(
       ggplot(data = food_filtered(), aes_string(x = input$x, y = input$y, color = "product")) +
         geom_point(size = 5) +
-        labs(x = tools::toTitleCase(gsub("_", " ", input$x)),
+        labs(title = paste(tools::toTitleCase(gsub("_", " ", input$x)), "by", tools::toTitleCase(gsub("_", " ", input$y)), "in Different Food Products"),
+             x = tools::toTitleCase(gsub("_", " ", input$x)),
              y = tools::toTitleCase(gsub("_", " ", input$y)),
              color = "Food Product"
         ) +
@@ -171,11 +172,13 @@ server <- function(input, output) {
     return(fig)
   })
   
-  #Render data table on all tabs (if checked)
+  #Render data table on the home tab (if checked)
   output$datatable <- DT::renderDataTable(
     if(input$show_data){
-      DT::datatable(data = food_filtered(), 
-                    options = list(pageLength = 10), 
+      DT::datatable(data = food_filtered() %>% 
+                      select(product, category, input$y, input$x),
+                    options = list(pageLength = 10,
+                    scrollX = FALSE), # Disable horizontal scrolling
                     rownames = FALSE)
     })
   
