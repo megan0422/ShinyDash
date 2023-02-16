@@ -1,5 +1,6 @@
 library(dplyr)
 library(ggplot2)
+library(plotly)
 library(readr)
 food <- read_csv("HW2/food.csv")
 
@@ -20,3 +21,21 @@ ggplot(data = food, aes(x = category, y = Total_emissions)) +
   ylab("Emissions") +
   ggtitle("Contribution of Food Types to Total Emissions")
 
+ggplotly(
+  ggplot(data = food, aes_string(x = "Animal_feed", y = "Total_emissions", color = "product")) +
+    geom_point(size = 5) +
+    theme_classic() +
+    theme(legend.position = "bottom")
+)
+colors <- c('#c584e4', '#82ac64', '#00bbd4', '#fef769')
+
+fig <- plot_ly(food, labels = ~category, values = ~Total_emissions, type = 'pie',
+               textposition = 'inside',
+               textinfo = 'percent',
+               marker = list(colors = colors,
+                             line = list(color = '#FFFFFF', width = 1)))
+fig <- fig %>% layout(title = 'Total Emissions by Food Category',
+                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+fig
