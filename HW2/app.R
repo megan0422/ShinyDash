@@ -108,13 +108,12 @@ ui <- dashboardPage(
                       tabItem("bar",
                               fluidRow(
                                 plotlyOutput(outputId = "barchart")
-                              ),
+                              )),
                       tabItem("pie", 
                                fluidRow(
                                  plotlyOutput(outputId = "piechart")
                                  )
                               )
-                      )
                       )
                     )
 )
