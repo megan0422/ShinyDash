@@ -154,7 +154,8 @@ server <- function(input, output) {
                            y = tools::toTitleCase(gsub("_", " ", input$y))) +
         scale_fill_brewer(palette = "Paired") +
         theme_classic() + 
-        theme(legend.position = "none")
+        theme(legend.position = "none"),
+      tooltip = c("cateogry", input$y)
     )
   })
   
