@@ -27,7 +27,7 @@ ui <- dashboardPage(
                               id = "tabs",
                               
                               #Page tabs
-                              menuItem("Home", icon = icon("poo"), tabName = "home"),
+                              menuItem("Home", icon = icon("home"), tabName = "home"),
                               menuItem("Bar chart", icon = icon("bar-chart"), tabName = "bar"),
                               menuItem("Pie chart", icon = icon("chart-pie"), tabName = "pie"),
                               
@@ -56,7 +56,7 @@ ui <- dashboardPage(
                                              "Scarcity Weighted Water Use (per kilogram)" = "Scarcity_water_kilogram",
                                              "Scarcity Weighted Water Use (per 100g protein)" = "Scarcity_water_protein",
                                              "Scarcity Weighted Water Use (per 100 kcal)" = "Scarcity_water_kcal"),
-                                           selected = "Total_emissions"),
+                                           selected = "Scarcity_water_kcal"),
                                selectInput("x", "Select an emissions variable for the x-axis of the histogram:", 
                                            c("Land Use (Kg CO2)" = "Land_use",
                                              "Animal Feed (Kg CO2)" = "Animal_feed",
@@ -80,13 +80,13 @@ ui <- dashboardPage(
                                              "Scarcity Weighted Water Use (per kilogram)" = "Scarcity_water_kilogram",
                                              "Scarcity Weighted Water Use (per 100g protein)" = "Scarcity_water_protein",
                                              "Scarcity Weighted Water Use (per 100 kcal)" = "Scarcity_water_kcal"),
-                                           selected = "Animal_feed"),
+                                           selected = "Land_use"),
                                sliderInput("emissions", "Pick a range of total emissions to filter food products in the dataset
                                            and plots:",
                                            min = 0, max = 60, value = c(0,30)),
                                #show data table
                                checkboxInput(inputId = "show_data",
-                                             label = "Show data table",
+                                             label = "Show data table (on home page)",
                                              value = TRUE))),
                   
                   #Output - tabs
@@ -149,9 +149,9 @@ server <- function(input, output) {
     ggplotly(
       ggplot(data = food_filtered(), aes_string(x = "category", y = input$y, fill = "category")) +
         geom_bar(stat = "identity") +
-        xlab("Food Category") +
-        ylab(tools::toTitleCase(gsub("_", " ", input$y))) +
-        ggtitle("Contribution of Different Food Categories to Selected Emission Type") +
+        labs(title = paste("Contribution of Different Food Categories to", tools::toTitleCase(gsub("_", " ", input$y))),
+                           x = "Food Category",
+                           y = tools::toTitleCase(gsub("_", " ", input$y))) +
         scale_fill_brewer(palette = "Paired") +
         theme_classic() + 
         theme(legend.position = "none")
@@ -184,33 +184,34 @@ server <- function(input, output) {
   
   #Render the value boxes 
   output$total_emissions <- renderValueBox({
+    total_emissions <- sum(food_filtered()$Total_emissions)
     valueBox(
-      value = format(round(aggregate(Total_emissions ~ category,
-                                     data = food, sum)$Total_emissions), nsmall = 2), #this will aggregate total emissions by food category
-      subtitle = "Total Emissions",
-      icon = icon("earth-americas"),
-      color = "blue"
-    )
-  })
-  
-  output$y_total <- renderValueBox({
-    valueBox(
-      value = format(round(sum(food$input[food$product == input$y]), nsmall = 2)),
-      subtitle = tools::toTitleCase(gsub("_", " ", input$y)),
+      value = format(round(total_emissions)),
+      subtitle = "Total Emissions in Current Data",
       icon = icon("fire"),
       color = "red"
     )
   })
   
-  output$x_total <- renderValueBox({
+  output$y_total <- renderValueBox({
+    total_emissions1 <- sum(food_filtered()[[input$y]])
     valueBox(
-      value = format(round(sum(food$input[food$product == input$x]), nsmall = 2)),
+      value = format(round(total_emissions1)),
+      subtitle = tools::toTitleCase(gsub("_", " ", input$y)),
+      icon = icon("earth-americas"),
+      color = "blue"
+    )
+  })
+  
+  output$x_total <- renderValueBox({
+    total_emissions2 <- sum(food_filtered()[[input$x]])
+    valueBox(
+      value = format(round(total_emissions2)),
       subtitle = tools::toTitleCase(gsub("_", " ", input$x)),
       icon = icon("tree"),
       color = "green"
     )
   })
-  
 }
 
 #run the dashboard
