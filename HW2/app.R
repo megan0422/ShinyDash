@@ -1,9 +1,10 @@
 library(shiny)
 library(shinydashboard)
+library(readr)
+library(ggplot2)
 library(reshape2)
 library(dplyr)
 library(plotly)
-library(shinythemes)
 
 #DATA MANIPULATION AND CLEANING 
 food <- read_csv("food.csv", show_col_types = FALSE)
@@ -82,7 +83,7 @@ ui <- dashboardPage(
                                              "Scarcity Weighted Water Use (per 100 kcal)" = "Scarcity_water_kcal"),
                                            selected = "Land_use"),
                                sliderInput("emissions", "Pick a range of total emissions to filter food products in the dataset
-                                           and plots:",
+                                           and plots by:",
                                            min = 0, max = 60, value = c(0,30)),
                                #show data table
                                checkboxInput(inputId = "show_data",
@@ -92,6 +93,7 @@ ui <- dashboardPage(
                   #Output - tabs
                   dashboardBody(
                     tabItems(
+                      #home tab will display value boxes, scatterplot, and datatable
                       tabItem("home",
                         fluidRow(
                           valueBoxOutput("total_emissions"),
@@ -105,10 +107,12 @@ ui <- dashboardPage(
                           DT::dataTableOutput(outputId = "datatable")
                           )
                         ),
+                      #tab 2: bar char by food category
                       tabItem("bar",
                               fluidRow(
                                 plotlyOutput(outputId = "barchart")
                               )),
+                      #tab 3: pie of total emissions (filtered by input range)
                       tabItem("pie", 
                                fluidRow(
                                  plotlyOutput(outputId = "piechart")
@@ -155,13 +159,13 @@ server <- function(input, output) {
         scale_fill_brewer(palette = "Paired") +
         theme_classic() + 
         theme(legend.position = "none"),
-      tooltip = c("cateogry", input$y)
-    )
+      tooltip = c("category", input$y)
+      )
   })
   
-  # Render the pie chart
+  # Render the pie chart using plot_ly() function
   output$piechart <- renderPlotly({
-    fig <- plot_ly(food_filtered(), labels = ~category, values = ~Total_emissions, type = 'pie',
+    fig <- plot_ly(food_filtered(), labels = ~category, values = ~Total_emissions, type = 'pie', 
                    textposition = 'inside',
                    textinfo = 'percent',
                    marker = list(colors = c('#c584e4', '#82ac64', '#00bbd4', '#fef769'),
@@ -177,7 +181,7 @@ server <- function(input, output) {
   output$datatable <- DT::renderDataTable(
     if(input$show_data){
       DT::datatable(data = food_filtered() %>% 
-                      select(product, category, input$y, input$x),
+                      select(product, category, input$y, input$x), #display product, category, and the two input variables only
                     options = list(pageLength = 10,
                     scrollX = FALSE), # Disable horizontal scrolling
                     rownames = FALSE)
